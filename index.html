@@ -73,7 +73,7 @@ input[type=range]{padding:0;accent-color:var(--blue)}
   <div class="row">
     <button id="btnStart" class="primary" style="font-size:22px;padding:16px 44px;flex:1;max-width:420px">▶ เริ่มอ่าน</button>
     <button id="btnStartVoice" title="สคริปต์เลื่อนตามเสียงพูด (Chrome + ไมค์)">🎙 โหมดตามเสียง</button>
-    <span class="hint">กดเริ่มแล้วอ่านตามได้เลย · Space พัก/เล่น · ↑↓ เร็ว/ช้า · เน้นคำสำคัญด้วย *คำ* = ขึ้นสีเหลือง</span>
+    <span class="hint">กดเริ่มแล้วอ่านวนไม่รู้จบ — ทุกช่วง # เป็นท่อนอิสระ ระบบสุ่มลำดับใหม่ทุกรอบเอง · Space พัก/เล่น · ↑↓ เร็ว/ช้า · *คำ* = เน้นเหลือง</span>
   </div>
 </div>
 
@@ -241,7 +241,167 @@ const SEED2 = `# Hook 1 สายนอนดึก — 25 วิ
 ไม่มีผลป้องกันหรือรักษาโรค อ่านฉลากก่อนบริโภคค่ะ
 ฝากแม่ๆ แชร์ไลฟ์ไว้ให้เพื่อนด้วยนะคะ
 เดี๋ยวน้องวนเล่าอีกรอบ พร้อมตอบทุกคำถามค่ะแม่`;
-let scripts = JSON.parse(localStorage.getItem('fx_scripts')||'null') || [{id:Date.now(),name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0},{id:Date.now()+1,name:'Multi-Oil Hook + Q&A',text:SEED2,pos:0}];
+/* สคริปต์ชุด 3 (ตัวหลัก): คลัง 32 ท่อนอิสระ — ไม่ต่อเนื่องกัน ระบบสุ่มวนขึ้นเองตลอด */
+const SEED3 = `# ทักแม่เข้าไลฟ์
+สวัสดีค่ะแม่ๆ เข้ามาแล้วพิมพ์ทักน้องหน่อยนะคะ
+แม่มาจากจังหวัดไหน พิมพ์บอกน้องหน่อยค่ะ
+วันนี้น้องอยู่ยาว คุยกับแม่ทุกคนแน่นอนค่ะ
+
+# Hook สายนอนดึก
+แม่ขา แม่ที่เลื่อนฟีดตอนดึกๆ หยุดก่อนค่ะ
+วันนี้แม่ทานของดีเข้าร่างหรือยังคะ
+ถ้ายัง น้องมีตัวช่วย *วันละสองเม็ด* ค่ะแม่
+
+# Hook สายน้ำมันปลา
+แม่คนไหนทานน้ำมันปลาอยู่ พิมพ์บอกน้องค่ะ
+ไขมันดีไม่ได้มีแค่จากปลานะคะแม่
+จะดีกว่าไหม ถ้าได้ครบ *สิบชนิด* ในเม็ดเดียว
+
+# Hook สายคุมอาหาร
+แม่ที่กำลังคุมอาหาร ทำไอเอฟ ฟังทางนี้ค่ะ
+งดของทอดได้ แต่อย่างดไขมันดีนะคะแม่
+ตัวนี้เติมไขมันดีง่ายๆ *วันละสองเม็ด* ค่ะ
+
+# Hook คนทำงานเหนื่อย
+แม่ที่ทำงานหนัก กลับบ้านก็เหนื่อยแล้ว
+ดูแลตัวเองแบบง่ายที่สุดก่อนค่ะแม่
+เริ่มจาก *สองเม็ดก่อนนอน* เท่านั้นเองค่ะ
+
+# Hook เพิ่งเข้าไลฟ์
+แม่ที่เพิ่งเข้ามา ยินดีต้อนรับค่ะ
+น้องกำลังเล่าตัวเด็ด *ฟู่เซียน มัลติออย เท็นเอ็กซ์*
+เดี๋ยวน้องวนเล่าเรื่อยๆ แม่ถามได้ตลอดเลยค่ะ
+
+# สินค้าคืออะไร
+*ฟู่เซียน มัลติออย ซิกเนเจอร์ เท็นเอ็กซ์* ค่ะแม่
+ผลิตภัณฑ์เสริมอาหารกลุ่มไขมันดีแบบองค์รวม
+น้ำมันสกัดเย็น *สิบชนิด* รวมในซอฟต์เจลเดียวค่ะ
+
+# ทำไมต้องรวมเม็ดเดียว
+ปกติน้ำมันดีๆ แม่ต้องซื้อทีละขวด แพงก็แพง
+ตัวนี้รวมมาให้จบ *สิบชนิด* ในเม็ดเดียวค่ะแม่
+ทานง่าย พกง่าย ทำต่อเนื่องได้จริงค่ะ
+
+# น้ำมันแฟลกซ์
+ตัวเด่นตัวแรก น้ำมันเมล็ดแฟลกซ์ค่ะแม่
+มี *โอเมก้า สาม หก เก้า* จากพืช
+ตัวช่วยเรื่องสมดุลไขมันประจำวันค่ะ
+
+# น้ำมันอะโวคาโด
+ตัวนี้แม่ๆ ชอบ น้ำมันอะโวคาโดค่ะ
+ไขมันดี อิ่มนาน ดูแลผิวพรรณ
+อยู่ในเม็ดเดียวกันเรียบร้อยค่ะแม่
+
+# น้ำมันมะพร้าว
+น้ำมันมะพร้าวสกัดเย็นก็มีค่ะแม่
+เรื่องพลังงานในแต่ละวัน
+ไม่ต้องตักทานเอง อยู่ในซอฟต์เจลแล้วค่ะ
+
+# น้ำมันกระเทียม
+อีกตัวที่แม่ๆ ถามบ่อย น้ำมันกระเทียมค่ะ
+ดูแลหัวใจและการไหลเวียนจากภายใน
+เป็นซอฟต์เจล ทานง่าย ไม่มีกลิ่นรบกวนค่ะแม่
+
+# วิธีทานคนทั่วไป
+แม่สายทั่วไป ง่ายสุดค่ะ
+*สองเม็ดก่อนนอน* จบ ไม่ต้องจำเยอะ
+ทำเป็นกิจวัตรก่อนปิดวันค่ะแม่
+
+# วิธีทานสายไอเอฟ
+แม่สายไอเอฟ ทานตอนไหน น้องตอบให้ค่ะ
+*สองเม็ดหลังมื้อสุดท้าย* ของวันค่ะ
+อยู่ในช่วงกินพอดี ไม่กระทบวินัยแม่ค่ะ
+
+# วิธีทานสายรูปร่าง
+แม่สายดูแลรูปร่างค่ะ
+เช้า *สองเม็ด* เย็น *สองเม็ด* หลังอาหาร
+ทานคู่อาหารดีๆ พักผ่อนให้พอนะคะแม่
+
+# แพ็กทดลอง
+แม่อยากลองก่อน จัดแพ็กเริ่มต้นค่ะ
+หนึ่งกระปุก *สี่ร้อยเก้าสิบบาท*
+ลองทานให้ติดเป็นกิจวัตรก่อนค่ะแม่
+
+# แพ็กยอดนิยม
+แพ็กที่แม่ๆ สั่งเยอะสุด *สองแถมหนึ่ง* ค่ะ
+ได้สามกระปุก *หนึ่งพันสองร้อยเก้าสิบ*
+เฉลี่ยกระปุกละ *สี่ร้อยสามสิบ* คุ้มกว่าเห็นๆ ค่ะ
+
+# แพ็กคุ้มสุด
+สายจัดหนัก *สี่แถมสอง* ได้หกกระปุกค่ะแม่
+*สองพันสามร้อยห้าสิบ* เฉลี่ย *สามร้อยเก้าสิบสอง*
+*ประหยัดห้าร้อยเก้าสิบ* เลยนะคะแม่
+
+# เทียบความคุ้ม
+น้องเทียบให้เห็นๆ ค่ะแม่
+ซื้อเดี่ยว *สี่ร้อยเก้าสิบ* แต่แพ็กหกกระปุก
+เหลือกระปุกละ *สามร้อยเก้าสิบสอง* เท่านั้นค่ะ
+
+# วิธีสั่ง CF
+แม่สนใจ พิมพ์ *ซีเอฟ* ตามด้วยแพ็กเลยค่ะ
+เช่น *ซีเอฟ สองแถมหนึ่ง*
+เดี๋ยวแอดมินทักแม่ทางแชทค่ะ
+
+# สั่งแล้วได้ของไว
+แม่สั่งในไลฟ์วันนี้ ทีมงานแพ็กของทันทีค่ะ
+จัดส่งไว มีเลขพัสดุแจ้งแม่แน่นอน
+พิมพ์ *ซีเอฟ* มาได้เลยค่ะแม่
+
+# ถามได้ทุกอย่าง
+แม่มีคำถามอะไร พิมพ์มาได้เลยนะคะ
+น้องอ่านทุกข้อความ ตอบทุกคำถามค่ะ
+ไม่ต้องเกรงใจน้องเลยค่ะแม่
+
+# ชวนแชร์ไลฟ์
+แม่ขา ฝากกดแชร์ไลฟ์ให้น้องหน่อยค่ะ
+เผื่อเพื่อนๆ แม่กำลังหาตัวช่วยแบบนี้อยู่
+ขอบคุณแม่ๆ ทุกคนเลยค่ะ
+
+# ชวนกดหัวใจ
+แม่ที่ยังไม่ได้กดหัวใจ กดให้น้องหน่อยค่ะ
+ยิ่งหัวใจเยอะ น้องยิ่งมีแรงเล่าค่ะ
+รักแม่ๆ ทุกคนเลยค่ะ
+
+# ถามแม่เคยทานไหม
+แม่เคยทานน้ำมันสกัดเย็นไหมคะ
+เคยทานตัวไหนอยู่ พิมพ์บอกน้องหน่อยค่ะ
+เดี๋ยวน้องแนะนำวิธีทานให้เหมาะกับแม่ค่ะ
+
+# ถามตอบ ทานคู่ยาได้ไหม
+มีแม่ถามว่า มีโรคประจำตัว ทานได้ไหม
+น้องแนะนำตรงๆ ค่ะแม่ ปรึกษาคุณหมอก่อนนะคะ
+น้องห่วงแม่ อยากให้ทานอย่างสบายใจค่ะ
+
+# ถามตอบ เม็ดใหญ่ไหม
+แม่ถามว่าเม็ดใหญ่ไหม กลืนยากไหม
+เป็นซอฟต์เจลค่ะแม่ เม็ดลื่น กลืนง่าย
+ทานกับน้ำเปล่าแก้วเดียวจบค่ะ
+
+# ถามตอบ ต่างจากน้ำมันปลา
+แม่ถามบ่อยมาก ต่างจากน้ำมันปลายังไง
+น้ำมันปลาเน้นจากปลา ตัวนี้สูตรรวมจากพืช *สิบชนิด* ค่ะ
+มองเป็นการดูแลแบบองค์รวมทุกวันค่ะแม่
+
+# ถามตอบ ทานนานไหม
+แม่ถามว่าทานนานแค่ไหนคะ
+ผลลัพธ์แต่ละคนต่างกันนะคะแม่
+หัวใจคือทานต่อเนื่อง คู่กับกินดี นอนพอค่ะ
+
+# ความต่อเนื่องสำคัญ
+ของแบบนี้ไม่ใช่ทานวันเดียวค่ะแม่
+หัวใจคือความต่อเนื่อง *วันละสองเม็ด* ทุกวัน
+แม่ทำได้แน่นอน ง่ายนิดเดียวค่ะ
+
+# คำเตือนตามหลัก
+แจ้งตามหลักนะคะแม่
+ตัวนี้เป็น *ผลิตภัณฑ์เสริมอาหาร ไม่ใช่ยา*
+ไม่มีผลป้องกันหรือรักษาโรค อ่านฉลากก่อนบริโภคค่ะ
+
+# ขอบคุณแม่ๆ
+ขอบคุณแม่ๆ ที่อยู่กับน้องนะคะ
+ใครเพิ่งเข้ามา เดี๋ยวน้องวนเล่าใหม่ค่ะ
+อยากรู้เรื่องไหน พิมพ์ถามได้เลยค่ะแม่`;
+let scripts = JSON.parse(localStorage.getItem('fx_scripts')||'null') || [{id:Date.now(),name:'Multi-Oil คลังวน 32 ท่อน',text:SEED3,pos:0},{id:Date.now()+1,name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0},{id:Date.now()+2,name:'Multi-Oil Hook + Q&A',text:SEED2,pos:0}];
 let curId = +localStorage.getItem('fx_cur') || scripts[0].id;
 const curScript = () => scripts.find(s=>s.id===curId) || scripts[0];
 function saveScripts(){ localStorage.setItem('fx_scripts',JSON.stringify(scripts)); localStorage.setItem('fx_cur',curId); }
@@ -255,16 +415,17 @@ $('scriptName').oninput = e => { curScript().name=e.target.value; saveScripts();
 $('scriptText').oninput = e => { const s=curScript(); if(s.text!==e.target.value) s.pos=0; s.text=e.target.value; saveScripts(); };
 $('btnNew').onclick = () => { const s={id:Date.now(),name:'สคริปต์ใหม่',text:'',pos:0}; scripts.push(s); curId=s.id; saveScripts(); renderSel(); $('scriptName').focus(); };
 $('btnDel').onclick = () => { if(scripts.length<=1||!confirm('ลบสคริปต์นี้?'))return; scripts=scripts.filter(s=>s.id!==curId); curId=scripts[0].id; saveScripts(); renderSel(); };
-/* sync สคริปต์ตัวอย่างตามเวอร์ชัน — v4: เสียง แม่/น้อง + ไฮไลต์ *คำสำคัญ*
+/* sync สคริปต์ตัวอย่างตามเวอร์ชัน — v5: คลังวน 32 ท่อน (ตัวหลักใหม่) + เสียง แม่/น้อง + ไฮไลต์
    ทับเฉพาะสคริปต์ชื่อ seed เดิม (สคริปต์ที่พี่ตั้งชื่อเองไม่โดนแตะ) */
-if(localStorage.getItem('fx_seed_v')!=='4'){
-  const seeds={'Multi-Oil รอบ 5 นาที':SEED,'Multi-Oil Hook + Q&A':SEED2};
+if(localStorage.getItem('fx_seed_v')!=='5'){
+  const seeds={'Multi-Oil คลังวน 32 ท่อน':SEED3,'Multi-Oil รอบ 5 นาที':SEED,'Multi-Oil Hook + Q&A':SEED2};
   Object.entries(seeds).forEach(([name,text],i)=>{
     const s=scripts.find(x=>x.name===name);
     if(s){ s.text=text; s.pos=0; }
     else scripts.push({id:Date.now()+i,name,text,pos:0});
   });
-  saveScripts(); localStorage.setItem('fx_seed_v','4');
+  curId=scripts.find(s=>s.name==='Multi-Oil คลังวน 32 ท่อน').id; // ตั้งคลังวนเป็นตัวเริ่มต้น
+  saveScripts(); localStorage.setItem('fx_seed_v','5');
 }
 renderSel();
 
@@ -298,10 +459,29 @@ window.__fx={tokenize,matchPos};
 let playing=false, speed=60, voiceOn=false, curIdx=-1, wordEls=[], wakeLock=null;
 let gen=0; // generation token — กัน countdown ที่ค้างอยู่กลับมาสตาร์ทหลังกดออกไปแล้ว
 
+/* ================= สุ่มรอบ: ทุกช่วง # เป็นท่อนอิสระ สับลำดับใหม่ทุกรอบ (Fisher-Yates) ================= */
+let lastFirst=null;
+function roundText(){
+  const text=curScript().text;
+  const blocks=[]; let cur={header:null,lines:[]};
+  text.split('\n').forEach(l=>{
+    if(l.trim().startsWith('#')){ blocks.push(cur); cur={header:l,lines:[]}; }
+    else cur.lines.push(l);
+  });
+  blocks.push(cur);
+  const secs=blocks.filter(b=>b.header);
+  if(secs.length<2) return text; // มีช่วงเดียว → อ่านตามเดิม
+  for(let i=secs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [secs[i],secs[j]]=[secs[j],secs[i]]; }
+  if(secs[0].header===lastFirst && secs.length>1) [secs[0],secs[1]]=[secs[1],secs[0]]; // ไม่เปิดรอบด้วยท่อนเดิมซ้ำ
+  lastFirst=secs[0].header;
+  const pre=blocks.filter(b=>!b.header).flatMap(b=>b.lines).join('\n').trim();
+  return (pre?pre+'\n':'')+secs.map(b=>[b.header,...b.lines].join('\n')).join('\n');
+}
+
 function buildPrompt(){
   ptextEl.innerHTML='';
   wordEls=[]; window.__fxTokens=[];
-  curScript().text.split('\n').forEach(line=>{
+  roundText().split('\n').forEach(line=>{
     if(line.trim().startsWith('#')){
       const d=document.createElement('div'); d.className='sec'; d.textContent=line.replace(/^#+\s*/,''); ptextEl.appendChild(d); return;
     }
@@ -335,7 +515,14 @@ function setCur(i){
 let scrollWin=window, rafId=null, intId=null, lastT=0, holdUntil=0;
 function step(){
   const now=performance.now(), dt=(now-lastT)/1000; lastT=now;
-  if(playing && !voiceOn && now>holdUntil) scrollerEl.scrollTop += speed*Math.min(dt,1);
+  if(playing && !voiceOn && now>holdUntil){
+    scrollerEl.scrollTop += speed*Math.min(dt,1);
+    // อ่านจบรอบ → สับท่อนใหม่ ขึ้นรอบถัดไปเอง (พักหายใจ 2 วิ) — วนไม่รู้จบ ไม่ต้องกด
+    if(scrollerEl.scrollTop >= scrollerEl.scrollHeight - scrollerEl.clientHeight - 2){
+      buildPrompt(); scrollerEl.scrollTop=0; curIdx=-1;
+      holdUntil=performance.now()+2000;
+    }
+  }
 }
 function raf(){ step(); rafId=scrollWin.requestAnimationFrame(raf); }
 function startLoop(){
@@ -467,7 +654,7 @@ $('bVoice').onclick=()=>setVoice(!voiceOn);
 $('bPip').onclick=openPip;
 $('bPrev').onclick=()=>jumpSec(-1);
 $('bNext').onclick=()=>jumpSec(1);
-function goTop(){ scrollerEl.scrollTop=0; curIdx=-1; curScript().pos=0; wordEls.forEach(w=>w.classList.remove('said','cur')); }
+function goTop(){ buildPrompt(); scrollerEl.scrollTop=0; curIdx=-1; curScript().pos=0; } // สับท่อนใหม่ด้วยทุกครั้ง
 $('bTop').onclick=goTop;
 $('rSpeed').oninput=e=>{ speed=Math.max(10,Math.min(200,+(e?.target?.value ?? $('rSpeed').value))); $('rSpeed').value=speed; };
 $('rFont').oninput=e=>{ const v=Math.max(24,Math.min(110,+(e?.target?.value ?? $('rFont').value))); $('rFont').value=v; ptextEl.style.fontSize=v+'px'; };
