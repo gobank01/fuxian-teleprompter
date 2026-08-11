@@ -8,10 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* โทนอ่านสบายตา: พื้นเทาเข้มอมน้ำตาล (ไม่ดำสนิท) + ตัวหนังสือขาวนวลอมครีม ลดแสงจ้า */
-  --bg:#101012; --panel:#1a1a1f; --line:#2e2e36; --text:#e9e4d6; --dim:#93907f;
-  --gold:#f0c75e; --blue:#3b6ff5; --green:#2ecc71; --red:#e74c3c;
-  --prompt-bg:#121214; --prompt-text:#ece6d4; --said:#5c5e64;
+  /* ธีมอ่านง่าย ฟ้า-ขาว-เหลือง: พื้นน้ำเงินกรมท่า + ตัวหนังสือขาว + ไฮไลต์เหลือง */
+  --bg:#0e1626; --panel:#162338; --line:#2a3b5c; --text:#f2f5fa; --dim:#8ea3c4;
+  --gold:#f7cf4d; --blue:#4a8fe8; --green:#2ecc71; --red:#e74c3c;
+  --prompt-bg:#0b1424; --prompt-text:#f5f8ff; --said:#54688c;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -22,7 +22,7 @@ button.primary{background:var(--gold);color:#111;font-weight:700;border-color:va
 button.on{background:var(--green);border-color:var(--green);color:#fff}
 input,select,textarea{font-family:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px}
 textarea{width:100%;flex:1;resize:none;line-height:1.9;font-size:18px}
-input[type=range]{padding:0;accent-color:var(--gold)}
+input[type=range]{padding:0;accent-color:var(--blue)}
 
 /* ---------- Edit mode ---------- */
 #edit{display:flex;flex-direction:column;gap:12px;height:100%;padding:16px;max-width:900px;margin:0 auto}
@@ -44,14 +44,14 @@ input[type=range]{padding:0;accent-color:var(--gold)}
 .mirror #scroller{transform:scaleX(-1)}
 #focusLine{position:absolute;left:0;right:0;top:35%;height:2px;background:rgba(240,199,94,.25);pointer-events:none}
 #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:20vh;font-weight:700;color:var(--gold);background:rgba(0,0,0,.85);z-index:3}
-#bar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.9));flex-wrap:wrap;z-index:2;transition:opacity .3s}
+#bar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(transparent,rgba(5,11,22,.92));flex-wrap:wrap;z-index:2;transition:opacity .3s}
 #bar.hid{opacity:0;pointer-events:none}
 #bar label{font-size:13px;color:var(--dim)}
 #bar button{padding:8px 12px;font-size:14px}
 #voiceDot{width:10px;height:10px;border-radius:50%;background:#555}
 #voiceDot.live{background:var(--red);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2a2118;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:12px 20px;font-size:16px;z-index:99;display:none;max-width:90vw;text-align:center}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1a2436;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:12px 20px;font-size:16px;z-index:99;display:none;max-width:90vw;text-align:center}
 @media (max-width:600px){#ptext{font-size:34px;padding:35vh 5vw 55vh}}
 </style>
 </head>
@@ -395,7 +395,7 @@ async function openPip(){
     st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n');
     pip.document.head.appendChild(st);
   }catch(_){} }
-  pip.document.body.style.background='#121214';
+  pip.document.body.style.background='#0b1424';
   pip.document.body.appendChild(scrollerEl);
   ptextEl.style.padding='40vh 6vw 60vh';
   pip.document.addEventListener('keydown',keyHandler); // คีย์ลัดใช้ได้แม้โฟกัสอยู่หน้าต่างลอย
