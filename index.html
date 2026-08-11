@@ -53,6 +53,12 @@ input[type=range]{padding:0;accent-color:var(--blue)}
 #voiceDot.live{background:var(--red);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1a2436;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:12px 20px;font-size:16px;z-index:99;display:none;max-width:90vw;text-align:center}
+#kwWarn{font-size:14px;line-height:1.8;display:none;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel);max-height:150px;overflow-y:auto}
+#kwWarn.bad{border-color:var(--red)}
+#kwWarn .ban{color:#ff8a80}
+#kwWarn .risky{color:var(--gold)}
+#kwWarn .ok{color:var(--green)}
+#kwWarn b{color:var(--text)}
 @media (max-width:600px){#ptext{font-size:34px;padding:35vh 5vw 55vh}}
 </style>
 </head>
@@ -70,6 +76,7 @@ input[type=range]{padding:0;accent-color:var(--blue)}
     <button id="btnDel">🗑️</button>
   </div>
   <textarea id="scriptText" placeholder="วางสคริปต์ขายที่นี่…&#10;&#10;ขึ้นบรรทัดด้วย # ชื่อสินค้า เพื่อคั่นเป็นช่วงๆ เช่น&#10;# ชาสมุนไพร Fuxian&#10;สวัสดีค่ะทุกคน วันนี้มีโปรพิเศษ…"></textarea>
+  <div id="kwWarn"></div>
   <div class="row">
     <button id="btnStart" class="primary" style="font-size:22px;padding:16px 44px;flex:1;max-width:420px">▶ เริ่มอ่าน</button>
     <button id="btnStartVoice" title="สคริปต์เลื่อนตามเสียงพูด (Chrome + ไมค์)">🎙 โหมดตามเสียง</button>
@@ -97,6 +104,7 @@ input[type=range]{padding:0;accent-color:var(--blue)}
 </div>
 <div id="toast"></div>
 
+<script src="keywords.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -131,7 +139,7 @@ const SEED3 = `# 👋 ทักแม่เข้าไลฟ์
 
 # 💼 Hook คนทำงานเหนื่อย
 😮‍💨 แม่ที่ทำงานหนัก กลับบ้านก็เหนื่อยแล้ว
-❤️ ดูแลตัวเองแบบง่ายที่สุดก่อนค่ะแม่
+❤️ ดูแลตัวเองแบบง่ายๆ ก่อนค่ะแม่
 🌙 เริ่มจาก *2 เม็ดก่อนนอน* เท่านั้นเองค่ะ
 
 # 👋 Hook เพิ่งเข้าไลฟ์
@@ -156,7 +164,7 @@ const SEED3 = `# 👋 ทักแม่เข้าไลฟ์
 
 # 🌸 ปัญหา วัย 40 บวก
 🙋‍♀️ แม่วัย 40 บวก ที่เริ่มหันมาดูแลตัวเอง
-👏 น้องขอปรบมือให้เลยค่ะ เริ่มวันนี้ดีที่สุดค่ะ
+👏 น้องขอปรบมือให้เลยค่ะ เริ่มเลยวันนี้แหละค่ะ
 🌿 ให้สูตรรวมน้ำมันดี *10 ชนิด* เป็นตัวช่วยแรกค่ะ
 
 # ⚖️ ปัญหา ดูแลรูปร่าง
@@ -181,7 +189,7 @@ const SEED3 = `# 👋 ทักแม่เข้าไลฟ์
 
 # 🥑 น้ำมันอะโวคาโด
 🥑 ตัวนี้แม่ๆ ชอบ น้ำมันอะโวคาโดค่ะ
-✨ ไขมันดี อิ่มนาน ดูแลผิวพรรณ
+✨ ไขมันดี อิ่มนาน ทานง่าย
 💊 อยู่ในเม็ดเดียวกันเรียบร้อยค่ะแม่
 
 # 🥥 น้ำมันมะพร้าว
@@ -308,15 +316,40 @@ $('scriptText').oninput = e => { const s=curScript(); if(s.text!==e.target.value
 $('btnNew').onclick = () => { const s={id:Date.now(),name:'สคริปต์ใหม่',text:'',pos:0}; scripts.push(s); curId=s.id; saveScripts(); renderSel(); $('scriptName').focus(); };
 $('btnDel').onclick = () => { if(scripts.length<=1||!confirm('ลบสคริปต์นี้?'))return; scripts=scripts.filter(s=>s.id!==curId); curId=scripts[0].id; saveScripts(); renderSel(); };
 /* sync สคริปต์ตัวอย่าง — v6: คลังวนตัวเดียว (เลขเป็นตัวเลข + emoji + pain hooks) ยุบชุดเก่าออก */
-if(localStorage.getItem('fx_seed_v')!=='6'){
+if(localStorage.getItem('fx_seed_v')!=='7'){
   scripts=scripts.filter(s=>s.name!=='Multi-Oil รอบ 5 นาที'&&s.name!=='Multi-Oil Hook + Q&A');
   let s3=scripts.find(x=>x.name.startsWith('Multi-Oil คลังวน'));
   if(s3){ s3.name='Multi-Oil คลังวน 37 ท่อน'; s3.text=SEED3; s3.pos=0; }
   else { s3={id:Date.now(),name:'Multi-Oil คลังวน 37 ท่อน',text:SEED3,pos:0}; scripts.push(s3); }
   curId=s3.id;
-  saveScripts(); localStorage.setItem('fx_seed_v','6');
+  saveScripts(); localStorage.setItem('fx_seed_v','7');
 }
 renderSel();
+
+/* ================= ตัวตรวจคำเสี่ยง (ฐานข้อมูล keywords.js) ================= */
+/* วลี disclaimer/คำแนะนำบังคับ — มีคำอย่าง "รักษาโรค" อยู่ข้างในแต่ไม่นับเป็นคำเสี่ยง */
+const KW_WHITELIST=['ไม่มีผลป้องกันหรือรักษาโรค','ไม่มีผลในการป้องกันหรือรักษาโรค','ผลิตภัณฑ์เสริมอาหาร ไม่ใช่ยา','มีโรคประจำตัว','ปรึกษาคุณหมอ','ปรึกษาแพทย์'];
+function scanKeywords(){
+  const box=$('kwWarn');
+  if(!window.FX_KEYWORDS){ box.style.display='none'; return; }
+  let t=curScript().text;
+  if(!t.trim()){ box.style.display='none'; return; }
+  KW_WHITELIST.forEach(p=>{ t=t.split(p).join(' '); });
+  t=t.toLowerCase();
+  const hits=FX_KEYWORDS.filter(w=>t.includes(w.term.toLowerCase()));
+  const bans=hits.filter(h=>h.level==='ban'), risks=hits.filter(h=>h.level==='risky');
+  box.style.display='block';
+  box.classList.toggle('bad',bans.length>0);
+  if(!hits.length){ box.innerHTML='<span class="ok">✅ ไม่พบคำเสี่ยง — ผ่านฐานข้อมูลคำต้องห้าม '+FX_KEYWORDS.length+' คำ</span>'; return; }
+  box.innerHTML=[
+    ...bans.map(h=>'<div class="ban">🔴 <b>'+h.term+'</b> — '+h.reason+(h.safe?' → ใช้แทน: <b>'+h.safe+'</b>':'')+'</div>'),
+    ...risks.map(h=>'<div class="risky">🟡 <b>'+h.term+'</b> — '+h.reason+(h.safe?' → ใช้แทน: <b>'+h.safe+'</b>':'')+'</div>')
+  ].join('');
+}
+let kwT=null;
+$('scriptText').addEventListener('input',()=>{ clearTimeout(kwT); kwT=setTimeout(scanKeywords,400); });
+$('scriptSel').addEventListener('change',scanKeywords);
+scanKeywords();
 
 /* ================= tokenize (Thai) ================= */
 const seg = new Intl.Segmenter('th',{granularity:'word'});
