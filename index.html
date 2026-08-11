@@ -31,9 +31,6 @@ input[type=range]{padding:0;accent-color:var(--gold)}
 #edit .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #scriptName{flex:1;min-width:160px}
 .hint{color:var(--dim);font-size:13px}
-#remoteInfo{display:none;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
-#remoteInfo b{color:var(--gold);font-size:22px;letter-spacing:3px}
-
 /* ---------- Prompt mode ---------- */
 #prompt{display:none;position:fixed;inset:0;background:var(--prompt-bg);z-index:10}
 /* ห้ามใส่ scroll-behavior:smooth — จะกลืน scrollTop increment ของ loop เลื่อนอัตโนมัติ */
@@ -51,7 +48,6 @@ input[type=range]{padding:0;accent-color:var(--gold)}
 #bar.hid{opacity:0;pointer-events:none}
 #bar label{font-size:13px;color:var(--dim)}
 #bar button{padding:8px 12px;font-size:14px}
-#barCode{color:var(--dim);font-size:13px}
 #voiceDot{width:10px;height:10px;border-radius:50%;background:#555}
 #voiceDot.live{background:var(--red);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
@@ -65,8 +61,6 @@ input[type=range]{padding:0;accent-color:var(--gold)}
 <div id="edit">
   <header>
     <h1>📖 Fuxian Teleprompter</h1>
-    <div id="remoteInfo"><span class="hint" id="remoteStatus">รีโมท: เปิด <span id="remoteUrl">…/remote.html</span> ใส่รหัส</span><b id="pairCode">------</b></div>
-    <button id="btnRemote">📱 เปิดรีโมท</button>
   </header>
   <div class="row">
     <select id="scriptSel"></select>
@@ -97,13 +91,11 @@ input[type=range]{padding:0;accent-color:var(--gold)}
     <button id="bPrev">⏮ ช่วงก่อน</button>
     <button id="bNext">⏭ ช่วงถัดไป</button>
     <button id="bTop">⏫ บนสุด</button>
-    <span id="barCode"></span>
     <button id="bExit" style="margin-left:auto">✕ ออก</button>
   </div>
 </div>
 <div id="toast"></div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -170,7 +162,85 @@ const SEED = `# ทักทาย — 30 วิ
 แจ้งตามหลักนะคะ ตัวนี้เป็นผลิตภัณฑ์เสริมอาหาร ไม่ใช่ยา
 ไม่มีผลป้องกันหรือรักษาโรค อ่านฉลากก่อนบริโภคค่ะ
 พักดื่มน้ำแป๊บนึง แล้วเริ่มรอบใหม่กันค่ะ`;
-let scripts = JSON.parse(localStorage.getItem('fx_scripts')||'null') || [{id:Date.now(),name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0}];
+/* สคริปต์ชุด 2: Hook + Q&A จำลอง persona — เปิดแรง ตอบคำถามเหมือนหยิบจากแชท */
+const SEED2 = `# Hook 1 สายนอนดึก — 25 วิ
+ใครกำลังเลื่อนฟีดตอนดึกๆ หยุดตรงนี้ก่อนค่ะ
+ถามจริงๆ วันนี้ทานของดีเข้าร่างหรือยังคะ
+ถ้ายัง แม่ค้ามีตัวช่วยง่ายๆ วันละสองเม็ดค่ะ
+น้ำมันสกัดเย็นสิบชนิด รวมในเม็ดเดียว
+อยู่ต่ออีกห้านาที คุ้มแน่นอนค่ะ
+
+# Hook 2 สายน้ำมันปลา — 25 วิ
+ใครทานน้ำมันปลาอยู่ ยกมือขึ้นหน่อยค่ะ
+แล้วรู้ไหมคะ ไขมันดีไม่ได้มีแค่จากปลา
+มีทั้งแฟลกซ์ อะโวคาโด มะพร้าว กระเทียม อีกเพียบ
+จะดีกว่าไหม ถ้าได้ครบสิบชนิด ในเม็ดเดียว
+นี่แหละค่ะ ฟู่เซียน มัลติออย เท็นเอ็กซ์
+
+# Hook 3 สายดูแลรูปร่าง — 25 วิ
+ใครกำลังคุมอาหาร ทำไอเอฟอยู่บ้างคะ
+รู้ไหมคะ ร่างกายเรายังต้องการไขมันดีทุกวัน
+งดของทอดได้ แต่อย่างดไขมันดีนะคะ
+ตัวนี้ช่วยให้เติมไขมันดีได้ง่ายๆ วันละสองเม็ด
+เดี๋ยวเล่าให้ฟังค่ะ ว่าทำไมสายคุมอาหารชอบตัวนี้
+
+# เล่าสินค้าสั้น — 40 วิ
+ฟู่เซียน มัลติออย ซิกเนเจอร์ เท็นเอ็กซ์ ค่ะ
+ผลิตภัณฑ์เสริมอาหาร กลุ่มไขมันดีแบบองค์รวม
+รวมน้ำมันสกัดเย็นสิบชนิด ไว้ในซอฟต์เจลเดียว
+เด่นๆ ก็แฟลกซ์ โอเมก้าสามหกเก้า อะโวคาโด
+มะพร้าวสกัดเย็น และน้ำมันกระเทียมค่ะ
+คอนเซ็ปต์เดียว เติมไขมันดี ดูแลสมดุลในทุกวัน
+ทานง่าย ทำต่อเนื่องได้จริง ไม่ต้องจำเยอะค่ะ
+
+# Q&A คุณหมิว ออฟฟิศ — 40 วิ
+มีคำถามเข้ามาค่ะ ขอบคุณคุณหมิวนะคะ
+ถามว่า ทำงานออฟฟิศ กินข้าวไม่เป็นเวลา ทานยังไงดี
+ง่ายสุดเลยค่ะคุณหมิว ทานสองเม็ดก่อนนอน
+ทำเป็นกิจวัตรก่อนปิดวัน จำง่าย ไม่มีลืมค่ะ
+ตื่นมาก็เริ่มวันใหม่แบบรู้สึกดูแลตัวเองแล้วค่ะ
+ใครเป็นสายออฟฟิศแบบคุณหมิว พิมพ์บอกหน่อยค่ะ
+
+# Q&A พี่แดง วัย 50 — 45 วิ
+คำถามถัดไปจากพี่แดงค่ะ อายุห้าสิบแล้ว
+ทานน้ำมันปลาอยู่ ต่างกันยังไงคะ
+คำถามดีมากค่ะพี่แดง น้ำมันปลาเน้นโอเมก้าจากปลา
+ส่วนตัวนี้เป็นสูตรรวมค่ะ ได้จากพืชหลากหลายถึงสิบชนิด
+มองเป็นการดูแลแบบองค์รวมในทุกวันค่ะ
+แต่ย้ำนะคะ ถ้ามีโรคประจำตัว หรือทานยาประจำ
+แนะนำปรึกษาคุณหมอก่อนเสมอค่ะ ด้วยความห่วงใยค่ะ
+
+# Q&A น้องเจน สายไอเอฟ — 35 วิ
+น้องเจนถามมาค่ะ ทำไอเอฟอยู่ ทานช่วงไหนดี
+ไม่ยากเลยค่ะ ทานสองเม็ด หลังมื้อสุดท้ายของวัน
+อยู่ในช่วงกินของเราพอดี ไม่กระทบวินัยค่ะ
+เป็นจังหวะปิดวันที่ชัดเจน ทำต่อเนื่องง่ายมากค่ะ
+สายไอเอฟในไลฟ์ มีใครอีกบ้างคะ พิมพ์มาเลยค่ะ
+
+# Q&A คุณส้ม แม่บ้าน — 35 วิ
+คุณส้มถามว่า เม็ดใหญ่ไหม ทานยากหรือเปล่า
+เป็นซอฟต์เจลค่ะคุณส้ม เม็ดลื่น กลืนง่ายค่ะ
+ทานกับน้ำเปล่าแก้วเดียว จบเลยค่ะ
+วันละสองเม็ดเท่านั้น ไม่ต้องนับเยอะค่ะ
+ใครมีคำถามอื่น พิมพ์เข้ามาได้เลยนะคะ แม่ค้าตอบทุกคนค่ะ
+
+# โปร + CF — 45 วิ
+ใครฟังมาถึงตรงนี้ รับโปรไปเลยค่ะ
+แพ็กทดลอง หนึ่งกระปุก สี่ร้อยเก้าสิบบาท
+แพ็กยอดนิยม สองแถมหนึ่ง หนึ่งพันสองร้อยเก้าสิบ
+เฉลี่ยกระปุกละสี่ร้อยสามสิบ ประหยัดร้อยแปดสิบค่ะ
+แพ็กคุ้มสุด สี่แถมสอง สองพันสามร้อยห้าสิบ
+เฉลี่ยเหลือสามร้อยเก้าสิบสองต่อกระปุกค่ะ
+สนใจพิมพ์ ซีเอฟ ตามด้วยแพ็ก ได้เลยค่ะ
+เช่น ซีเอฟ สองแถมหนึ่ง แอดมินทักไปสรุปยอดค่ะ
+
+# ปิดรอบ — 25 วิ
+ขอบคุณทุกคำถามเลยนะคะ น่ารักมากค่ะ
+แจ้งตามหลักค่ะ ตัวนี้เป็นผลิตภัณฑ์เสริมอาหาร ไม่ใช่ยา
+ไม่มีผลป้องกันหรือรักษาโรค อ่านฉลากก่อนบริโภคค่ะ
+ฝากแชร์ไลฟ์ไว้ให้เพื่อนๆ ด้วยนะคะ
+เดี๋ยวแม่ค้าวนเล่าอีกรอบ พร้อมตอบทุกคำถามค่ะ`;
+let scripts = JSON.parse(localStorage.getItem('fx_scripts')||'null') || [{id:Date.now(),name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0},{id:Date.now()+1,name:'Multi-Oil Hook + Q&A',text:SEED2,pos:0}];
 let curId = +localStorage.getItem('fx_cur') || scripts[0].id;
 const curScript = () => scripts.find(s=>s.id===curId) || scripts[0];
 function saveScripts(){ localStorage.setItem('fx_scripts',JSON.stringify(scripts)); localStorage.setItem('fx_cur',curId); }
@@ -184,13 +254,14 @@ $('scriptName').oninput = e => { curScript().name=e.target.value; saveScripts();
 $('scriptText').oninput = e => { const s=curScript(); if(s.text!==e.target.value) s.pos=0; s.text=e.target.value; saveScripts(); };
 $('btnNew').onclick = () => { const s={id:Date.now(),name:'สคริปต์ใหม่',text:'',pos:0}; scripts.push(s); curId=s.id; saveScripts(); renderSel(); $('scriptName').focus(); };
 $('btnDel').onclick = () => { if(scripts.length<=1||!confirm('ลบสคริปต์นี้?'))return; scripts=scripts.filter(s=>s.id!==curId); curId=scripts[0].id; saveScripts(); renderSel(); };
-/* เครื่องที่เคยเปิดก่อนหน้า: เติมสคริปต์รอบ 5 นาทีให้ครั้งเดียว (ลบทิ้งแล้วไม่งอกกลับ) */
-if(localStorage.getItem('fx_seed_v')!=='2'){
-  if(!scripts.some(s=>s.name==='Multi-Oil รอบ 5 นาที')){
-    const s={id:Date.now(),name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0};
-    scripts.push(s); curId=s.id; saveScripts();
+/* เครื่องที่เคยเปิดก่อนหน้า: เติมสคริปต์ตัวอย่างให้ครั้งเดียว (ลบทิ้งแล้วไม่งอกกลับ) */
+if(localStorage.getItem('fx_seed_v')!=='3'){
+  if(!scripts.some(s=>s.name==='Multi-Oil รอบ 5 นาที')) scripts.push({id:Date.now(),name:'Multi-Oil รอบ 5 นาที',text:SEED,pos:0});
+  if(!scripts.some(s=>s.name==='Multi-Oil Hook + Q&A')){
+    const s={id:Date.now()+1,name:'Multi-Oil Hook + Q&A',text:SEED2,pos:0};
+    scripts.push(s); curId=s.id;
   }
-  localStorage.setItem('fx_seed_v','2');
+  saveScripts(); localStorage.setItem('fx_seed_v','3');
 }
 renderSel();
 
@@ -267,7 +338,7 @@ function stopLoop(){ if(rafId)scrollWin.cancelAnimationFrame(rafId); clearInterv
 /* ปัดจอ/หมุนลูกกลิ้งเพื่อแก้ตำแหน่งเอง → หยุดเลื่อนอัตโนมัติชั่วคราว 1.5 วิ ไม่สู้กับนิ้วผู้ใช้ */
 ['touchstart','touchmove','wheel'].forEach(ev=>scrollerEl.addEventListener(ev,()=>{holdUntil=performance.now()+1500},{passive:true}));
 
-function setPlaying(v){ playing=v; $('bPlay').textContent=v?'⏸ พัก':'▶ เล่น'; $('bPlay').classList.toggle('on',v); sendState(); }
+function setPlaying(v){ playing=v; $('bPlay').textContent=v?'⏸ พัก':'▶ เล่น'; $('bPlay').classList.toggle('on',v); }
 
 /* ================= voice ================= */
 let rec=null, restartT=null, vErr=0;
@@ -299,7 +370,6 @@ function setVoice(v){
     };
     try{rec.start()}catch(_){}
   }
-  sendState();
 }
 
 /* ================= sections ================= */
@@ -390,8 +460,8 @@ $('bPrev').onclick=()=>jumpSec(-1);
 $('bNext').onclick=()=>jumpSec(1);
 function goTop(){ scrollerEl.scrollTop=0; curIdx=-1; curScript().pos=0; wordEls.forEach(w=>w.classList.remove('said','cur')); }
 $('bTop').onclick=goTop;
-$('rSpeed').oninput=e=>{ speed=Math.max(10,Math.min(200,+(e?.target?.value ?? $('rSpeed').value))); $('rSpeed').value=speed; sendState(); };
-$('rFont').oninput=e=>{ const v=Math.max(24,Math.min(110,+(e?.target?.value ?? $('rFont').value))); $('rFont').value=v; ptextEl.style.fontSize=v+'px'; sendState(); };
+$('rSpeed').oninput=e=>{ speed=Math.max(10,Math.min(200,+(e?.target?.value ?? $('rSpeed').value))); $('rSpeed').value=speed; };
+$('rFont').oninput=e=>{ const v=Math.max(24,Math.min(110,+(e?.target?.value ?? $('rFont').value))); $('rFont').value=v; ptextEl.style.fontSize=v+'px'; };
 function keyHandler(e){
   if($('prompt').style.display!=='block'||e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
   if(e.code==='Space'){ e.preventDefault(); setPlaying(!playing); }
@@ -404,50 +474,6 @@ function keyHandler(e){
 }
 document.addEventListener('keydown',keyHandler);
 
-/* ================= remote (PeerJS) =================
-   ponytail: รหัส 6 หลักบน PeerJS cloud สาธารณะ — พอสำหรับใช้ในทีม
-   ถ้าวันหน้าซีเรียสเรื่อง hijack ค่อยย้ายไป self-host PeerServer + ยืนยันการเชื่อมต่อ */
-let peer=null, conns=[], code='', idRetries=0;
-const gen6=()=>String(Math.floor(100000+Math.random()*900000));
-function sendState(){ const st={t:'state',playing,voice:voiceOn,speed,font:+$('rFont').value}; conns.forEach(c=>{try{c.send(st)}catch(_){}}); }
-setInterval(()=>{ if(conns.length) sendState(); },4000); // heartbeat ให้รีโมทรู้ว่ายังต่อติด
-function remoteStatus(msg){ $('remoteStatus').textContent=msg; $('remoteInfo').style.display='flex'; }
-function openPeer(){
-  code=gen6();
-  peer=new Peer('fxtp-'+code);
-  peer.on('open',()=>{
-    idRetries=0;
-    $('pairCode').textContent=code; $('barCode').textContent='รีโมท '+code;
-    remoteStatus('รีโมท: เปิด '+location.origin+location.pathname.replace(/[^/]*$/,'')+'remote.html ใส่รหัส');
-  });
-  peer.on('connection',c=>{
-    conns.push(c);
-    c.on('data',d=>{
-      if($('prompt').style.display!=='block') return; // ยังไม่เข้าโหมดอ่าน — ไม่รับคำสั่ง กันไมค์ติด/สถานะเพี้ยนตั้งแต่ยังไม่เริ่ม
-      if(d.c==='toggle') setPlaying(!playing);
-      if(d.c==='faster'){ $('rSpeed').value=+$('rSpeed').value+10; $('rSpeed').oninput(); }
-      if(d.c==='slower'){ $('rSpeed').value=+$('rSpeed').value-10; $('rSpeed').oninput(); }
-      if(d.c==='font+'){ $('rFont').value=+$('rFont').value+6; $('rFont').oninput(); }
-      if(d.c==='font-'){ $('rFont').value=+$('rFont').value-6; $('rFont').oninput(); }
-      if(d.c==='next') jumpSec(1);
-      if(d.c==='prev') jumpSec(-1);
-      if(d.c==='voice') setVoice(!voiceOn);
-      if(d.c==='restart') goTop();
-      sendState();
-    });
-    c.on('open',sendState);
-    c.on('close',()=>{ conns=conns.filter(x=>x!==c); });
-  });
-  peer.on('error',e=>{
-    if(e.type==='unavailable-id' && idRetries<3){ // รหัสชน → สุ่มใหม่อัตโนมัติ
-      idRetries++; try{peer.destroy()}catch(_){} peer=null; openPeer(); return;
-    }
-    // ห้าม alert — modal จะ freeze ตัวเลื่อนสคริปต์กลางไลฟ์
-    remoteStatus('รีโมทขัดข้อง ('+e.type+') — กดเปิดรีโมทใหม่');
-    if(e.type!=='network'){ try{peer.destroy()}catch(_){} peer=null; conns=[]; $('barCode').textContent=''; }
-  });
-}
-$('btnRemote').onclick=()=>{ if(!peer) openPeer(); };
 </script>
 </body>
 </html>
