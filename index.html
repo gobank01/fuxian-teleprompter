@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxian Teleprompter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* โทนอ่านสบายตา: พื้นเทาเข้มอมน้ำตาล (ไม่ดำสนิท) + ตัวหนังสือขาวนวลอมครีม ลดแสงจ้า */
+  --bg:#101012; --panel:#1a1a1f; --line:#2e2e36; --text:#e9e4d6; --dim:#93907f;
+  --gold:#f0c75e; --blue:#3b6ff5; --green:#2ecc71; --red:#e74c3c;
+  --prompt-bg:#121214; --prompt-text:#ece6d4; --said:#5c5e64;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',-apple-system,sans-serif}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;background:var(--panel);color:var(--text);border:1px solid var(--line);padding:10px 16px;font-size:15px}
+button:hover{border-color:var(--gold)}
+button.primary{background:var(--gold);color:#111;font-weight:700;border-color:var(--gold)}
+button.on{background:var(--green);border-color:var(--green);color:#fff}
+input,select,textarea{font-family:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px}
+textarea{width:100%;flex:1;resize:none;line-height:1.9;font-size:18px}
+input[type=range]{padding:0;accent-color:var(--gold)}
+
+/* ---------- Edit mode ---------- */
+#edit{display:flex;flex-direction:column;gap:12px;height:100%;padding:16px;max-width:900px;margin:0 auto}
+#edit header{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#edit h1{font-size:20px;color:var(--gold);margin-right:auto}
+#edit .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#scriptName{flex:1;min-width:160px}
+.hint{color:var(--dim);font-size:13px}
+#remoteInfo{display:none;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+#remoteInfo b{color:var(--gold);font-size:22px;letter-spacing:3px}
+
+/* ---------- Prompt mode ---------- */
+#prompt{display:none;position:fixed;inset:0;background:var(--prompt-bg);z-index:10}
+/* ห้ามใส่ scroll-behavior:smooth — จะกลืน scrollTop increment ของ loop เลื่อนอัตโนมัติ */
+#scroller{height:100%;overflow-y:auto}
+#scroller::-webkit-scrollbar{display:none}
+#ptext{padding:40vh 8vw 60vh;font-size:52px;line-height:1.85;font-weight:500;text-align:center;color:var(--prompt-text);overflow-wrap:anywhere}
+#ptext .sec{color:var(--gold);font-weight:700;font-size:.7em;border-top:1px solid var(--line);padding-top:.8em;margin-top:.8em}
+#ptext span.w{cursor:pointer}
+#ptext span.said{color:var(--said)}
+#ptext span.cur{color:var(--gold)}
+.mirror #scroller{transform:scaleX(-1)}
+#focusLine{position:absolute;left:0;right:0;top:35%;height:2px;background:rgba(240,199,94,.25);pointer-events:none}
+#countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:20vh;font-weight:700;color:var(--gold);background:rgba(0,0,0,.85);z-index:3}
+#bar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.9));flex-wrap:wrap;z-index:2;transition:opacity .3s}
+#bar.hid{opacity:0;pointer-events:none}
+#bar label{font-size:13px;color:var(--dim)}
+#bar button{padding:8px 12px;font-size:14px}
+#barCode{color:var(--dim);font-size:13px}
+#voiceDot{width:10px;height:10px;border-radius:50%;background:#555}
+#voiceDot.live{background:var(--red);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2a2118;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:12px 20px;font-size:16px;z-index:99;display:none;max-width:90vw;text-align:center}
+@media (max-width:600px){#ptext{font-size:34px;padding:35vh 5vw 55vh}}
+</style>
+</head>
+<body>
+
+<!-- ================= EDIT ================= -->
+<div id="edit">
+  <header>
+    <h1>📖 Fuxian Teleprompter</h1>
+    <div id="remoteInfo"><span class="hint" id="remoteStatus">รีโมท: เปิด <span id="remoteUrl">…/remote.html</span> ใส่รหัส</span><b id="pairCode">------</b></div>
+    <button id="btnRemote">📱 เปิดรีโมท</button>
+  </header>
+  <div class="row">
+    <select id="scriptSel"></select>
+    <input id="scriptName" placeholder="ชื่อสคริปต์ เช่น ชาเขียว Live จันทร์">
+    <button id="btnNew">➕ ใหม่</button>
+    <button id="btnDel">🗑️</button>
+  </div>
+  <textarea id="scriptText" placeholder="วางสคริปต์ขายที่นี่…&#10;&#10;ขึ้นบรรทัดด้วย # ชื่อสินค้า เพื่อคั่นเป็นช่วงๆ เช่น&#10;# ชาสมุนไพร Fuxian&#10;สวัสดีค่ะทุกคน วันนี้มีโปรพิเศษ…"></textarea>
+  <div class="row">
+    <button id="btnStart" class="primary" style="font-size:22px;padding:16px 44px;flex:1;max-width:420px">▶ เริ่มอ่าน</button>
+    <button id="btnStartVoice" title="สคริปต์เลื่อนตามเสียงพูด (Chrome + ไมค์)">🎙 โหมดตามเสียง</button>
+    <span class="hint">กดเริ่มแล้วอ่านตามได้เลย · Space พัก/เล่น · ↑↓ เร็ว/ช้า · ปรับความเร็วได้ที่แถบล่าง</span>
+  </div>
+</div>
+
+<!-- ================= PROMPT ================= -->
+<div id="prompt">
+  <div id="focusLine"></div>
+  <div id="scroller"><div id="ptext"></div></div>
+  <div id="countdown">3</div>
+  <div id="bar">
+    <button id="bPlay">▶ เล่น</button>
+    <label>ความเร็ว</label><input type="range" id="rSpeed" min="10" max="200" value="60" style="width:110px">
+    <label>ขนาด</label><input type="range" id="rFont" min="24" max="110" value="52" style="width:110px">
+    <button id="bVoice">🎙 ตามเสียง</button><div id="voiceDot"></div>
+    <button id="bMirror">🪞 กระจก</button>
+    <button id="bPip">🔲 หน้าต่างลอย</button>
+    <button id="bPrev">⏮ ช่วงก่อน</button>
+    <button id="bNext">⏭ ช่วงถัดไป</button>
+    <span id="barCode"></span>
+    <button id="bExit" style="margin-left:auto">✕ ออก</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+/* จับ reference ครั้งเดียว — ห้าม lookup สดด้วย id: ตอนเปิดหน้าต่างลอย (PiP)
+   element ถูกย้ายไปอีก document แล้ว getElementById ฝั่งนี้จะได้ null */
+const scrollerEl = $('scroller'), ptextEl = $('ptext');
+
+let toastT=null;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toastT); toastT=setTimeout(()=>t.style.display='none',4000); }
+
+/* ================= scripts storage ================= */
+let scripts = JSON.parse(localStorage.getItem('fx_scripts')||'null') || [{id:Date.now(),name:'สคริปต์แรก',text:'',pos:0}];
+let curId = +localStorage.getItem('fx_cur') || scripts[0].id;
+const curScript = () => scripts.find(s=>s.id===curId) || scripts[0];
+function saveScripts(){ localStorage.setItem('fx_scripts',JSON.stringify(scripts)); localStorage.setItem('fx_cur',curId); }
+function renderSel(){
+  $('scriptSel').innerHTML = scripts.map(s=>`<option value="${s.id}" ${s.id===curId?'selected':''}>${s.name}</option>`).join('');
+  $('scriptName').value = curScript().name;
+  $('scriptText').value = curScript().text;
+}
+$('scriptSel').onchange = e => { curId=+e.target.value; saveScripts(); renderSel(); };
+$('scriptName').oninput = e => { curScript().name=e.target.value; saveScripts(); const o=$('scriptSel').querySelector(`option[value="${curId}"]`); if(o)o.textContent=e.target.value; };
+$('scriptText').oninput = e => { const s=curScript(); if(s.text!==e.target.value) s.pos=0; s.text=e.target.value; saveScripts(); };
+$('btnNew').onclick = () => { const s={id:Date.now(),name:'สคริปต์ใหม่',text:'',pos:0}; scripts.push(s); curId=s.id; saveScripts(); renderSel(); $('scriptName').focus(); };
+$('btnDel').onclick = () => { if(scripts.length<=1||!confirm('ลบสคริปต์นี้?'))return; scripts=scripts.filter(s=>s.id!==curId); curId=scripts[0].id; saveScripts(); renderSel(); };
+renderSel();
+
+/* ================= tokenize (Thai) ================= */
+const seg = new Intl.Segmenter('th',{granularity:'word'});
+const norm = w => w.toLowerCase().replace(/[\s\p{P}]/gu,'');
+function tokenize(text){
+  const out=[];
+  for(const s of seg.segment(text)) if(s.isWordLike){ const n=norm(s.segment); if(n) out.push(n); }
+  return out;
+}
+
+/* ================= voice position matcher =================
+   ponytail: naive windowed scan O(window*K); good to ~10k-word scripts */
+function matchPos(spoken, tokens, cur){
+  if(!spoken.length || !tokens || !tokens.length) return -1;
+  const lo=Math.max(0,cur-10), hi=Math.min(tokens.length-1,cur+80);
+  let best=1.9, pos=-1; // ต้องตรง >=2 คำถึงยอมขยับ
+  for(let j=lo;j<=hi;j++){
+    let s=0;
+    for(let k=0;k<spoken.length && k<=j;k++)
+      if(tokens[j-k]===spoken[spoken.length-1-k]) s++;
+    const sc=s-Math.abs(j-cur)*0.02;
+    if(sc>best){best=sc;pos=j;}
+  }
+  return pos;
+}
+window.__fx={tokenize,matchPos};
+
+/* ================= prompt mode ================= */
+let playing=false, speed=60, voiceOn=false, curIdx=-1, wordEls=[], wakeLock=null;
+let gen=0; // generation token — กัน countdown ที่ค้างอยู่กลับมาสตาร์ทหลังกดออกไปแล้ว
+
+function buildPrompt(){
+  ptextEl.innerHTML='';
+  wordEls=[]; window.__fxTokens=[];
+  curScript().text.split('\n').forEach(line=>{
+    if(line.trim().startsWith('#')){
+      const d=document.createElement('div'); d.className='sec'; d.textContent=line.replace(/^#+\s*/,''); ptextEl.appendChild(d); return;
+    }
+    const p=document.createElement('div');
+    for(const s of seg.segment(line)){
+      if(s.isWordLike){
+        const n=norm(s.segment);
+        const sp=document.createElement('span'); sp.className='w'; sp.textContent=s.segment;
+        sp.dataset.i=wordEls.length;
+        // แตะคำเพื่อย้ายตำแหน่ง: เฉพาะโหมดตามเสียง และไม่ใช่แตะแรกที่แค่เรียกแถบปุ่มกลับมา
+        sp.onclick=()=>{ if(voiceOn && performance.now()>swallowClickUntil) setCur(+sp.dataset.i); };
+        p.appendChild(sp); wordEls.push(sp); window.__fxTokens.push(n);
+      } else p.appendChild(document.createTextNode(s.segment));
+    }
+    ptextEl.appendChild(p);
+  });
+}
+function setCur(i){
+  wordEls.forEach((w,k)=>{ w.classList.toggle('said',k<i); w.classList.toggle('cur',k===i); });
+  curIdx=i;
+  const w=wordEls[i]; if(w) w.scrollIntoView({block:'center',behavior:'smooth'});
+}
+
+/* auto scroll loop — dt จากเวลาจริง + interval สำรอง กันค้างตอนแท็บถูกซ่อน/ย่อหน้าต่าง (rAF หยุดเดิน) */
+let scrollWin=window, rafId=null, intId=null, lastT=0, holdUntil=0;
+function step(){
+  const now=performance.now(), dt=(now-lastT)/1000; lastT=now;
+  if(playing && !voiceOn && now>holdUntil) scrollerEl.scrollTop += speed*Math.min(dt,1);
+}
+function raf(){ step(); rafId=scrollWin.requestAnimationFrame(raf); }
+function startLoop(){
+  stopLoop(); lastT=performance.now();
+  rafId=scrollWin.requestAnimationFrame(raf);
+  intId=setInterval(step,250); // hidden tab: timer ยังเดิน (ถูกหรี่เหลือ ~1Hz แต่ตำแหน่งไม่หลุดเพราะคิดจาก dt)
+}
+function stopLoop(){ if(rafId)scrollWin.cancelAnimationFrame(rafId); clearInterval(intId); rafId=intId=null; }
+/* ปัดจอ/หมุนลูกกลิ้งเพื่อแก้ตำแหน่งเอง → หยุดเลื่อนอัตโนมัติชั่วคราว 1.5 วิ ไม่สู้กับนิ้วผู้ใช้ */
+['touchstart','touchmove','wheel'].forEach(ev=>scrollerEl.addEventListener(ev,()=>{holdUntil=performance.now()+1500},{passive:true}));
+
+function setPlaying(v){ playing=v; $('bPlay').textContent=v?'⏸ พัก':'▶ เล่น'; $('bPlay').classList.toggle('on',v); sendState(); }
+
+/* ================= voice ================= */
+let rec=null, restartT=null, vErr=0;
+function stopRec(){
+  if(!rec) return;
+  clearTimeout(restartT); rec.onend=rec.onresult=rec.onerror=null;
+  try{rec.stop()}catch(_){} rec=null;
+}
+function setVoice(v){
+  stopRec(); // กัน recognizer ตัวเก่าค้างซ้อน
+  voiceOn=v; vErr=0;
+  $('bVoice').classList.toggle('on',v); $('voiceDot').classList.toggle('live',v);
+  if(v){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){ toast('โหมดตามเสียงต้องใช้ Chrome'); return setVoice(false); }
+    rec=new SR(); rec.lang='th-TH'; rec.continuous=true; rec.interimResults=true;
+    rec.onresult=e=>{
+      vErr=0;
+      let txt=''; for(let i=Math.max(0,e.results.length-3);i<e.results.length;i++) txt+=e.results[i][0].transcript;
+      const spoken=tokenize(txt).slice(-8);
+      const p=matchPos(spoken, window.__fxTokens, Math.max(curIdx,0));
+      if(p>=0 && p!==curIdx) setCur(p);
+    };
+    rec.onend=()=>{ if(voiceOn) restartT=setTimeout(()=>{ try{rec&&rec.start()}catch(_){} },300); };
+    rec.onerror=e=>{
+      if(e.error==='not-allowed'){ toast('ไม่ได้รับอนุญาตใช้ไมค์ — สลับเป็นเลื่อนเองแล้ว'); setVoice(false); setPlaying(true); resetBarHide(); return; }
+      if(e.error==='no-speech') return; // เงียบเฉยๆ ไม่นับเป็น error
+      if(++vErr>=3){ toast('โหมดตามเสียงขัดข้อง ('+e.error+') — สลับเป็นเลื่อนเองแล้ว'); setVoice(false); setPlaying(true); resetBarHide(); }
+    };
+    try{rec.start()}catch(_){}
+  }
+  sendState();
+}
+
+/* ================= sections ================= */
+function jumpSec(dir){
+  const secs=[...ptextEl.querySelectorAll('.sec')]; if(!secs.length) return;
+  const top=scrollerEl.scrollTop + scrollerEl.clientHeight*0.35;
+  let target=null;
+  if(dir>0) target=secs.find(s=>s.offsetTop>top+10);
+  else { const before=secs.filter(s=>s.offsetTop<top-10); target=before[before.length-1]; } // ถอย = ไปต้นช่วงปัจจุบัน / กดซ้ำ = ช่วงก่อนหน้า
+  // กระโดดแบบทันที (ไม่ smooth) — smooth จะโดน loop เลื่อนอัตโนมัติ cancel ทิ้งกลางทาง
+  if(target) scrollerEl.scrollTop = target.offsetTop - scrollerEl.clientHeight*0.35;
+}
+
+/* ================= PiP floating window ================= */
+let pipWin=null;
+async function openPip(){
+  if(!('documentPictureInPicture' in window)) return toast('หน้าต่างลอยต้องใช้ Chrome');
+  if(pipWin){ try{pipWin.focus()}catch(_){} return; } // กันกดซ้ำเปิดซ้อน
+  const pip=await documentPictureInPicture.requestWindow({width:520,height:320});
+  pipWin=pip;
+  for(const ss of document.styleSheets){ try{
+    const st=pip.document.createElement('style');
+    st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n');
+    pip.document.head.appendChild(st);
+  }catch(_){} }
+  pip.document.body.style.background='#121214';
+  pip.document.body.appendChild(scrollerEl);
+  ptextEl.style.padding='40vh 6vw 60vh';
+  pip.document.addEventListener('keydown',keyHandler); // คีย์ลัดใช้ได้แม้โฟกัสอยู่หน้าต่างลอย
+  scrollWin=pip; startLoop(); // rAF ต้องวิ่งบนหน้าต่างที่มองเห็น ไม่งั้นสคริปต์ค้างเมื่อหน้าหลักถูกย่อ
+  pip.addEventListener('pagehide',()=>{
+    $('prompt').insertBefore(scrollerEl, $('countdown'));
+    ptextEl.style.padding='';
+    pipWin=null; scrollWin=window; startLoop();
+  });
+}
+
+/* ================= enter / exit ================= */
+async function enterPrompt(withVoice){
+  if(!curScript().text.trim()) return toast('ยังไม่มีสคริปต์');
+  const g=++gen;
+  setVoice(false); setPlaying(false); // ล้าง state ค้างจากรีโมท/รอบก่อน
+  if(withVoice){
+    // ขอไมค์ก่อนนับถอยหลัง — ไม่ให้ permission popup เด้งตอนกำลังจะเริ่มพูด
+    try{ (await navigator.mediaDevices.getUserMedia({audio:true})).getTracks().forEach(t=>t.stop()); }
+    catch(_){ return toast('ต้องอนุญาตไมโครโฟนก่อนใช้โหมดตามเสียง'); }
+    if(g!==gen) return;
+  }
+  $('edit').style.display='none'; $('prompt').style.display='block';
+  buildPrompt(); curIdx=-1;
+  scrollerEl.scrollTop = curScript().pos||0; // อ่านต่อจากตำแหน่งเดิม
+  $('rFont').oninput();
+  try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(_){}
+  if(g!==gen) return;
+  const cd=$('countdown'); cd.style.display='flex';
+  for(const n of [3,2,1]){ cd.textContent=n; await new Promise(r=>setTimeout(r,800)); if(g!==gen) return; }
+  cd.style.display='none';
+  startLoop();
+  if(withVoice) setVoice(true); else setPlaying(true);
+  resetBarHide();
+}
+function exitPrompt(){
+  gen++;
+  curScript().pos=scrollerEl.scrollTop; saveScripts(); // จำตำแหน่งไว้อ่านต่อ
+  setVoice(false); setPlaying(false); stopLoop();
+  if(wakeLock){wakeLock.release();wakeLock=null;}
+  $('countdown').style.display='none';
+  $('prompt').style.display='none'; $('edit').style.display='flex';
+}
+
+/* ================= bar auto-hide ================= */
+let hideT=null, swallowClickUntil=0;
+function resetBarHide(){
+  if($('bar').classList.contains('hid')) swallowClickUntil=performance.now()+500; // แตะแรกแค่เรียกแถบกลับมา ไม่นับเป็นคลิกคำ
+  $('bar').classList.remove('hid'); clearTimeout(hideT); hideT=setTimeout(()=>$('bar').classList.add('hid'),4000);
+}
+['mousemove','touchstart','keydown'].forEach(ev=>$('prompt').addEventListener(ev,resetBarHide));
+
+/* ================= controls ================= */
+$('btnStart').onclick=()=>enterPrompt(false);
+$('btnStartVoice').onclick=()=>enterPrompt(true);
+$('bPlay').onclick=()=>setPlaying(!playing);
+$('bExit').onclick=exitPrompt;
+$('bMirror').onclick=()=>{ $('prompt').classList.toggle('mirror'); $('bMirror').classList.toggle('on'); };
+$('bVoice').onclick=()=>setVoice(!voiceOn);
+$('bPip').onclick=openPip;
+$('bPrev').onclick=()=>jumpSec(-1);
+$('bNext').onclick=()=>jumpSec(1);
+$('rSpeed').oninput=e=>{ speed=Math.max(10,Math.min(200,+(e?.target?.value ?? $('rSpeed').value))); $('rSpeed').value=speed; sendState(); };
+$('rFont').oninput=e=>{ const v=Math.max(24,Math.min(110,+(e?.target?.value ?? $('rFont').value))); $('rFont').value=v; ptextEl.style.fontSize=v+'px'; sendState(); };
+function keyHandler(e){
+  if($('prompt').style.display!=='block'||e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if(e.code==='Space'){ e.preventDefault(); setPlaying(!playing); }
+  if(e.key==='ArrowUp'){ $('rSpeed').value=+$('rSpeed').value+10; $('rSpeed').oninput(); }
+  if(e.key==='ArrowDown'){ $('rSpeed').value=+$('rSpeed').value-10; $('rSpeed').oninput(); }
+  if(e.key==='ArrowRight') jumpSec(1);
+  if(e.key==='ArrowLeft') jumpSec(-1);
+  if(e.key==='Escape') exitPrompt();
+}
+document.addEventListener('keydown',keyHandler);
+
+/* ================= remote (PeerJS) =================
+   ponytail: รหัส 6 หลักบน PeerJS cloud สาธารณะ — พอสำหรับใช้ในทีม
+   ถ้าวันหน้าซีเรียสเรื่อง hijack ค่อยย้ายไป self-host PeerServer + ยืนยันการเชื่อมต่อ */
+let peer=null, conns=[], code='', idRetries=0;
+const gen6=()=>String(Math.floor(100000+Math.random()*900000));
+function sendState(){ const st={t:'state',playing,voice:voiceOn,speed,font:+$('rFont').value}; conns.forEach(c=>{try{c.send(st)}catch(_){}}); }
+setInterval(()=>{ if(conns.length) sendState(); },4000); // heartbeat ให้รีโมทรู้ว่ายังต่อติด
+function remoteStatus(msg){ $('remoteStatus').textContent=msg; $('remoteInfo').style.display='flex'; }
+function openPeer(){
+  code=gen6();
+  peer=new Peer('fxtp-'+code);
+  peer.on('open',()=>{
+    idRetries=0;
+    $('pairCode').textContent=code; $('barCode').textContent='รีโมท '+code;
+    remoteStatus('รีโมท: เปิด '+location.origin+location.pathname.replace(/[^/]*$/,'')+'remote.html ใส่รหัส');
+  });
+  peer.on('connection',c=>{
+    conns.push(c);
+    c.on('data',d=>{
+      if($('prompt').style.display!=='block') return; // ยังไม่เข้าโหมดอ่าน — ไม่รับคำสั่ง กันไมค์ติด/สถานะเพี้ยนตั้งแต่ยังไม่เริ่ม
+      if(d.c==='toggle') setPlaying(!playing);
+      if(d.c==='faster'){ $('rSpeed').value=+$('rSpeed').value+10; $('rSpeed').oninput(); }
+      if(d.c==='slower'){ $('rSpeed').value=+$('rSpeed').value-10; $('rSpeed').oninput(); }
+      if(d.c==='font+'){ $('rFont').value=+$('rFont').value+6; $('rFont').oninput(); }
+      if(d.c==='font-'){ $('rFont').value=+$('rFont').value-6; $('rFont').oninput(); }
+      if(d.c==='next') jumpSec(1);
+      if(d.c==='prev') jumpSec(-1);
+      if(d.c==='voice') setVoice(!voiceOn);
+      if(d.c==='restart'){ scrollerEl.scrollTop=0; curIdx=-1; curScript().pos=0; wordEls.forEach(w=>w.classList.remove('said','cur')); }
+      sendState();
+    });
+    c.on('open',sendState);
+    c.on('close',()=>{ conns=conns.filter(x=>x!==c); });
+  });
+  peer.on('error',e=>{
+    if(e.type==='unavailable-id' && idRetries<3){ // รหัสชน → สุ่มใหม่อัตโนมัติ
+      idRetries++; try{peer.destroy()}catch(_){} peer=null; openPeer(); return;
+    }
+    // ห้าม alert — modal จะ freeze ตัวเลื่อนสคริปต์กลางไลฟ์
+    remoteStatus('รีโมทขัดข้อง ('+e.type+') — กดเปิดรีโมทใหม่');
+    if(e.type!=='network'){ try{peer.destroy()}catch(_){} peer=null; conns=[]; $('barCode').textContent=''; }
+  });
+}
+$('btnRemote').onclick=()=>{ if(!peer) openPeer(); };
+</script>
+</body>
+</html>
