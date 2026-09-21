@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Locate Chrome or Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
+            if chrome_path="$(command -v "$candidate")" && [[ -x "$chrome_path" ]]; then
+              printf 'CHROME_PATH=%s\n' "$chrome_path" >> "$GITHUB_ENV"
+              "$chrome_path" --version
+              exit 0
+            fi
+          done
+          echo "::error::Chrome or Chromium was not found on the runner PATH."
+          exit 1
+      - name: Run unit and browser regression tests
+        run: npm test

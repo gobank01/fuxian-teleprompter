@@ -1,1 +1,8 @@
 .claude
+.git
+.github
+tests
+docs
+dist
+node_modules
+.env*
